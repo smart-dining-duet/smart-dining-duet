@@ -87,7 +87,14 @@ label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}input,selec
     <form id="paymentForm"><div class="grid">
       <div class="field"><label for="payAmount">Payment Amount (৳)</label><input id="payAmount" type="number" min="1" max="100000" step="1" required></div>
       <div class="field"><label for="payMethod">Demo payment method</label><select id="payMethod"><option value="bkash">bKash Demo</option><option value="nagad">Nagad Demo</option><option value="rocket">Rocket Demo</option></select></div>
-    </div><button class="btn" type="submit">Continue to Demo Verification</button></form>
+<div class="actions">
+  <button class="btn" type="submit">Payment</button>
+  <button class="btn" type="button" id="useCreditBtn"
+          style="background:#137547">
+    Use Credit
+  </button>
+</div>
+      
     <div id="paymentMsg" class="message hidden"></div>
     <h3 style="margin-top:20px">Payment History</h3><div class="tablewrap"><table><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th><th>Reference</th></tr></thead><tbody id="paymentsBody"><tr><td colspan="5" class="muted">No payment records loaded.</td></tr></tbody></table></div>
   </div>
@@ -309,6 +316,66 @@ $('paymentForm').addEventListener('submit',async e=>{
   }catch(err){showMessage('Could not create payment request: '+(err.message||err),'error','paymentMsg')}finally{btn.disabled=false}
 });
 $('cancelVerify').addEventListener('click',closeVerification);
+$('useCreditBtn').addEventListener('click', async () => {
+  if (!profile || !currentUser) return;
+
+  const credit = Number(profile.credit_balance || 0);
+
+  const pendingMeals = monthMeals
+    .filter(r => r.status === 'pending')
+    .sort((a, b) =>
+      a.meal_date.localeCompare(b.meal_date) ||
+      MEAL_TYPES.indexOf(a.meal_type) -
+      MEAL_TYPES.indexOf(b.meal_type)
+    );
+
+  const meal = pendingMeals.find(r =>
+    Number(r.amount || MEAL_PRICES[r.meal_type]) <= credit
+  );
+
+  if (!meal) {
+    showMessage(
+      credit <= 0
+        ? 'Your credit balance is zero.'
+        : 'No pending meal can be paid with your current credit.',
+      'error',
+      'paymentMsg'
+    );
+    return;
+  }
+
+  const btn = $('useCreditBtn');
+  btn.disabled = true;
+
+  try {
+    const { error } = await supabase.rpc('use_my_credit', {
+      p_meal_date: meal.meal_date,
+      p_meal_type: meal.meal_type
+    });
+
+    if (error) throw error;
+
+    showMessage(
+      MEAL_LABELS[meal.meal_type] +
+      ' on ' + meal.meal_date +
+      ' paid using credit successfully.',
+      'success',
+      'paymentMsg'
+    );
+
+    await loadDashboard();
+
+  } catch (err) {
+    showMessage(
+      'Credit payment failed: ' + (err.message || err),
+      'error',
+      'paymentMsg'
+    );
+  } finally {
+    btn.disabled = false;
+  }
+});
+  
 $('verifyForm').addEventListener('submit',async e=>{
   e.preventDefault();if(!pendingPaymentId)return;
   const btn=$('verifyBtn');btn.disabled=true;hideMessage('verifyMsg');
