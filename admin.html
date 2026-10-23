@@ -2,320 +2,337 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Dining | Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Dining | DUET Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:#f1f5f9;color:#172033}
-header{background:#123b70;color:white;padding:20px}
-header h1{margin:0 0 6px;font-size:23px}
-main{max-width:1200px;margin:20px auto;padding:0 14px}
-.panel,.stat{background:white;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px #0000000c}
-input,select,button{padding:10px;border:1px solid #cbd5e1;border-radius:7px;font-size:14px}
-input,select{max-width:100%;margin:4px}
-button{cursor:pointer;background:#174b87;color:white;border:0;margin:3px}
-button.secondary{background:#64748b}
-button.danger{background:#b91c1c}
-button.success{background:#15803d}
+header{background:#123c2c;color:white;padding:20px}
+header h2{margin:0}
+main{max-width:1100px;margin:24px auto;padding:0 14px}
+.card{background:white;padding:18px;border-radius:12px;margin-bottom:18px;box-shadow:0 2px 10px #0000000c}
+input,button{padding:11px;border:1px solid #ccd5df;border-radius:7px;font-size:14px;margin:4px 0}
+input{width:100%}
+button{cursor:pointer;background:#176b4d;color:white;border:0}
+.secondary{background:#475569}
+.danger{background:#b42318}
 .hidden{display:none!important}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}
-.stat strong{font-size:25px;display:block;margin-top:8px}
-.tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat{background:#e8f5ee;padding:15px;border-radius:9px}
+.stat b{font-size:24px;display:block;margin-top:8px}
+.tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:15px}
 .tablewrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;background:white;font-size:13px}
-th,td{padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;white-space:nowrap}
-th{background:#eaf0f8}
-#message{padding:10px;border-radius:8px;margin-bottom:12px;white-space:pre-wrap}
-.note{font-size:13px;color:#475569;line-height:1.5}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px;text-align:left;border-bottom:1px solid #e2e8f0;font-size:13px}
+#message{white-space:pre-wrap;color:#b42318}
+.small{color:#64748b;font-size:13px}
+.actions button{margin:3px}
 </style>
 </head>
+
 <body>
 <header>
-<h1>Smart Dining | DUET</h1>
-<div>Shahid Tajuddin Ahmed Hall — Admin Panel</div>
+  <h2>Smart Dining | DUET</h2>
+  <p>Admin Dashboard</p>
 </header>
+
 <main>
-<div id="message" class="hidden"></div>
+  <section id="loginCard" class="card">
+    <h3>Admin Login</h3>
+    <form id="loginForm">
+      <label>Email</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label>Password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <button type="submit">Login</button>
+    </form>
+    <p id="message"></p>
+  </section>
 
-<section id="login" class="panel">
-<h2>Admin Login</h2>
+  <section id="dashboard" class="hidden">
+    <div class="card">
+      <b>Smart Dining Management</b><br><br>
+      <button id="refreshBtn">Refresh Data</button>
+      <button id="logoutBtn" class="secondary">Logout</button>
+      <p id="status" class="small"></p>
+    </div>
 
-<form id="loginForm">
-<p><input id="email" type="email" placeholder="Admin email" required autocomplete="username"></p>
-<p><input id="password" type="password" placeholder="Password" required autocomplete="current-password"></p>
-<button type="submit">Login</button>
-</form>
-</section>
+    <div class="grid card">
+      <div class="stat">Total Students<b id="totalStudents">0</b></div>
+      <div class="stat">Pending<b id="pendingStudents">0</b></div>
+      <div class="stat">Approved<b id="approvedStudents">0</b></div>
+      <div class="stat">Blocked<b id="blockedStudents">0</b></div>
+    </div>
 
-<section id="dashboard" class="hidden">
-<div class="panel">
-<strong id="adminEmail"></strong>
-<button id="refresh" class="secondary">Refresh Data</button>
-<button id="logout" class="danger">Logout</button>
-</div>
+    <div class="card">
+      <div class="tabs">
+        <button data-tab="students">Students</button>
+        <button data-tab="meals">Meals</button>
+        <button data-tab="payments">Payments</button>
+      </div>
 
-<div class="stats">
-<div class="stat">Total Students<strong id="total">0</strong></div>
-<div class="stat">Pending Approval<strong id="pending">0</strong></div>
-<div class="stat">Approved<strong id="approved">0</strong></div>
-<div class="stat">Blocked<strong id="blocked">0</strong></div>
-<div class="stat">Today's Meals<strong id="todayMeals">0</strong></div>
-<div class="stat">Pending Payments<strong id="pendingPayments">0</strong></div>
-</div>
+      <section id="studentsTab">
+        <h3>Student Management</h3>
+        <input id="studentSearch" placeholder="Search student ID, name, email or room">
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr><th>Student</th><th>Room</th><th>Status</th><th>RFID UID</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="studentsBody"></tbody>
+          </table>
+        </div>
+      </section>
 
-<div class="panel">
-<div class="tabs">
-<button data-tab="students">Students</button>
-<button data-tab="meals">Meals</button>
-<button data-tab="payments">Payments</button>
-</div>
+      <section id="mealsTab" class="hidden">
+        <h3>Meal Records</h3>
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr><th>Student ID</th><th>Date</th><th>Meal</th><th>Status</th><th>Amount</th></tr>
+            </thead>
+            <tbody id="mealsBody"></tbody>
+          </table>
+        </div>
+      </section>
 
-<section id="studentsTab">
-<h2>Student Management</h2>
-<input id="studentSearch" placeholder="Search ID, name, room or phone">
-<div class="tablewrap"><table>
-<thead><tr>
-<th>Student</th><th>Room</th><th>Contact</th><th>Approval</th><th>Blocked</th><th>RFID UID</th><th>Actions</th>
-</tr></thead>
-<tbody id="studentsRows"></tbody>
-</table></div>
-</section>
-
-<section id="mealsTab" class="hidden">
-<h2>Meal Records</h2>
-<input id="mealDate" type="date">
-<select id="mealStatus">
-<option value="">All statuses</option>
-<option>on</option><option>off</option><option>pending</option><option>paid</option>
-</select>
-<div class="tablewrap"><table>
-<thead><tr><th>Date</th><th>Student ID</th><th>Meal</th><th>Status</th><th>Amount</th></tr></thead>
-<tbody id="mealsRows"></tbody>
-</table></div>
-</section>
-
-<section id="paymentsTab" class="hidden">
-<h2>Payment Records</h2>
-<select id="paymentStatus">
-<option value="">All statuses</option>
-<option>pending</option><option>successful</option><option>failed</option>
-</select>
-<div class="tablewrap"><table>
-<thead><tr><th>Date</th><th>Student ID</th><th>Amount</th><th>Method</th><th>Status</th><th>Reference</th></tr></thead>
-<tbody id="paymentsRows"></tbody>
-</table></div>
-</section>
-</div>
-</section>
+      <section id="paymentsTab" class="hidden">
+        <h3>Payment Records</h3>
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr><th>Student ID</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th></tr>
+            </thead>
+            <tbody id="paymentsBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </section>
 </main>
 
 <script>
+// Supabase configuration — your project URL and Publishable Key
 const SUPABASE_URL = "https://wwgzlzrhrcjpxrtyobty.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_O5qjhiHkBqTPCRZjW9VMnQ_f7liBq9j";
-const sb = window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 
-let students=[], meals=[], payments=[];
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
+
 const $ = id => document.getElementById(id);
 
-function message(text,error=false){
-  $("message").textContent=text;
-  $("message").classList.remove("hidden");
-  $("message").style.background=error?"#fee2e2":"#dcfce7";
-  $("message").style.color=error?"#991b1b":"#166534";
-}
-function esc(value){
-  return String(value ?? "").replace(/[&<>"']/g,c=>({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[c]));
-}
-function showApp(user){
-  $("login").classList.add("hidden");
-  $("dashboard").classList.remove("hidden");
-  $("adminEmail").textContent=user.email || "Admin";
-}
-function showLogin(){
-  $("dashboard").classList.add("hidden");
-  $("login").classList.remove("hidden");
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;",
+    '"':"&quot;", "'":"&#39;"
+  })[c]);
 }
 
-$("loginForm").addEventListener("submit",async e=>{
-  e.preventDefault();
-  try{
-    const {data,error}=await sb.auth.signInWithPassword({
-      email:$("email").value.trim(),
-      password:$("password").value
-    });
-    if(error) throw error;
+function message(text) {
+  $("message").textContent = text;
+}
 
-    const {data:isAdmin,error:adminError}=await sb.rpc("is_admin");
-    if(adminError) throw adminError;
-    if(isAdmin!==true){
-      await sb.auth.signOut();
-      throw new Error("এই account-টি Admin হিসেবে অনুমোদিত নয়।");
+function studentStatus(s) {
+  if (s.is_blocked) return "Blocked";
+  if (s.is_approved === true || s.approval_status === "approved")
+    return "Approved";
+  if (s.approval_status === "rejected") return "Rejected";
+  return "Pending";
+}
+
+async function verifyAdmin() {
+  const { data: { user }, error } = await db.auth.getUser();
+  if (error || !user) return false;
+
+  const { data, error: roleError } = await db.rpc("is_admin");
+  if (roleError) throw roleError;
+
+  return data === true;
+}
+
+async function login(event) {
+  event.preventDefault();
+  message("Logging in...");
+
+  const email = $("email").value.trim();
+  const password = $("password").value;
+
+  const { error } = await db.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    message("Login failed: " + error.message);
+    return;
+  }
+
+  try {
+    if (!(await verifyAdmin())) {
+      await db.auth.signOut();
+      message("This account does not have admin permission.");
+      return;
     }
-    showApp(data.user);
-    message("Admin login successful.");
-    await loadAll();
-  }catch(err){
-    message(err.message || "Login failed.",true);
-  }
-});
 
-async function verifyAdmin(){
-  const {data:{user},error}=await sb.auth.getUser();
-  if(error || !user) throw new Error("Please login again.");
-  const {data,error:rpcError}=await sb.rpc("is_admin");
-  if(rpcError) throw rpcError;
-  if(data!==true) throw new Error("Admin permission denied.");
-  return user;
-}
-
-async function loadAll(){
-  try{
-    await verifyAdmin();
-    const results=await Promise.all([
-      sb.from("students").select("*").order("created_at",{ascending:false}),
-      sb.from("student_meals").select("*").order("meal_date",{ascending:false}).limit(1000),
-      sb.from("payments").select("*").order("created_at",{ascending:false}).limit(1000)
-    ]);
-    for(const r of results) if(r.error) throw r.error;
-    students=results[0].data||[];
-    meals=results[1].data||[];
-    payments=results[2].data||[];
-    renderAll();
-    message("Data refreshed successfully.");
-  }catch(err){
-    message("Data load failed: "+err.message,true);
+    $("loginCard").classList.add("hidden");
+    $("dashboard").classList.remove("hidden");
+    await loadData();
+  } catch (error) {
+    message("Admin verification failed: " + error.message);
   }
 }
 
-function renderAll(){
-  $("total").textContent=students.length;
-  $("pending").textContent=students.filter(s=>s.approval_status==="pending").length;
-  $("approved").textContent=students.filter(s=>s.is_approved===true).length;
-  $("blocked").textContent=students.filter(s=>s.is_blocked===true).length;
-  const today=new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Dhaka"});
-  $("todayMeals").textContent=meals.filter(m=>m.meal_date===today && ["on","paid"].includes(m.status)).length;
-  $("pendingPayments").textContent=payments.filter(p=>p.payment_status==="pending").length;
+let students = [];
+
+async function loadData() {
+  $("status").textContent = "Loading data...";
+
+  const results = await Promise.all([
+    db.from("students").select("*").order("created_at", {ascending:false}),
+    db.from("student_meals").select("*").order("meal_date", {ascending:false}).limit(500),
+    db.from("payments").select("*").order("created_at", {ascending:false}).limit(500)
+  ]);
+
+  const errors = results.filter(r => r.error);
+  if (errors.length) {
+    $("status").textContent = "Database error: " +
+      errors.map(r => r.error.message).join(" | ");
+    return;
+  }
+
+  students = results[0].data || [];
+  const meals = results[1].data || [];
+  const payments = results[2].data || [];
+
+  $("totalStudents").textContent = students.length;
+  $("pendingStudents").textContent =
+    students.filter(s => studentStatus(s) === "Pending").length;
+  $("approvedStudents").textContent =
+    students.filter(s => studentStatus(s) === "Approved").length;
+  $("blockedStudents").textContent =
+    students.filter(s => s.is_blocked).length;
+
   renderStudents();
-  renderMeals();
-  renderPayments();
+  $("mealsBody").innerHTML = meals.map(m => `
+    <tr>
+      <td>${esc(m.student_id)}</td>
+      <td>${esc(m.meal_date)}</td>
+      <td>${esc(m.meal_type)}</td>
+      <td>${esc(m.status)}</td>
+      <td>৳${esc(m.amount)}</td>
+    </tr>`).join("");
+
+  $("paymentsBody").innerHTML = payments.map(p => `
+    <tr>
+      <td>${esc(p.student_id)}</td>
+      <td>৳${esc(p.amount)}</td>
+      <td>${esc(p.method)}</td>
+      <td>${esc(p.payment_status)}</td>
+      <td>${esc(p.created_at)}</td>
+    </tr>`).join("");
+
+  $("status").textContent =
+    `Loaded ${students.length} students, ${meals.length} meal records and ${payments.length} payments.`;
 }
 
-function renderStudents(){
-  const q=$("studentSearch").value.toLowerCase();
-  const rows=students.filter(s=>
-    [s.student_id,s.name,s.room_no,s.phone,s.email].some(v=>String(v||"").toLowerCase().includes(q))
+function renderStudents() {
+  const q = $("studentSearch").value.trim().toLowerCase();
+
+  const filtered = students.filter(s =>
+    [s.student_id, s.name, s.email, s.room_no]
+      .some(v => String(v ?? "").toLowerCase().includes(q))
   );
-  $("studentsRows").innerHTML=rows.map(s=>`<tr>
-    <td>${esc(s.student_id)}<br>${esc(s.name)}<br><small>${esc(s.email)}</small></td>
-    <td>${esc(s.room_no)}</td>
-    <td>${esc(s.phone)}</td>
-    <td>${esc(s.approval_status)}</td>
-    <td>${s.is_blocked?"Yes":"No"}</td>
-    <td>${esc(s.rfid_uid)}<br>${esc(s.card_status)}</td>
-    <td>
-      <button class="success" data-action="approve" data-id="${esc(s.id)}">Approve</button>
-      <button class="secondary" data-action="reject" data-id="${esc(s.id)}">Reject</button>
-      <button data-action="block" data-id="${esc(s.id)}">${s.is_blocked?"Unblock":"Block"}</button>
-      <button class="secondary" data-action="rfid" data-id="${esc(s.id)}">Set RFID</button>
-      <button class="danger" data-action="delete" data-id="${esc(s.id)}">Delete</button>
-    </td></tr>`).join("");
+
+  $("studentsBody").innerHTML = filtered.map(s => `
+    <tr>
+      <td>
+        <b>${esc(s.name)}</b><br>
+        ID: ${esc(s.student_id)}<br>
+        <span class="small">${esc(s.email)}</span>
+      </td>
+      <td>${esc(s.room_no)}</td>
+      <td>${esc(studentStatus(s))}</td>
+      <td>${esc(s.rfid_uid)}</td>
+      <td class="actions">
+        <button onclick="approveStudent('${esc(s.id)}')">Approve</button>
+        <button class="secondary" onclick="toggleBlock('${esc(s.id)}',${!s.is_blocked})">
+          ${s.is_blocked ? "Unblock" : "Block"}
+        </button>
+        <button class="secondary" onclick="setRFID('${esc(s.id)}')">Set RFID</button>
+      </td>
+    </tr>`).join("");
 }
 
-async function updateStudent(id,values){
-  await verifyAdmin();
-  const {error}=await sb.from("students").update(values).eq("id",id);
-  if(error) throw error;
-  await loadAll();
+async function approveStudent(id) {
+  if (!confirm("Approve this student?")) return;
+
+  const { error } = await db.from("students").update({
+    is_approved: true,
+    approval_status: "approved"
+  }).eq("id", id);
+
+  if (error) return alert("Approve failed: " + error.message);
+  await loadData();
 }
 
-$("studentsRows").addEventListener("click",async e=>{
-  const b=e.target.closest("button[data-action]");
-  if(!b)return;
-  const s=students.find(x=>x.id===b.dataset.id);
-  if(!s)return;
-  try{
-    await verifyAdmin();
-    switch(b.dataset.action){
-      case "approve":
-        if(confirm("Approve "+s.student_id+"?"))
-          await updateStudent(s.id,{approval_status:"approved",is_approved:true});
-        break;
-      case "reject":
-        if(confirm("Reject "+s.student_id+"?"))
-          await updateStudent(s.id,{approval_status:"rejected",is_approved:false});
-        break;
-      case "block":
-        await updateStudent(s.id,{is_blocked:!s.is_blocked});
-        break;
-      case "rfid":{
-        const uid=prompt("Enter RFID UID:",s.rfid_uid||"");
-        if(uid===null)return;
-        const clean=uid.trim();
-        await updateStudent(s.id,{rfid_uid:clean||null,card_status:clean?"active":"inactive"});
-        break;
-      }
-      case "delete":{
-        const typed=prompt(
-          "WARNING: This may permanently delete this student's linked meal and payment records too.\nTo confirm, type Student ID: "+s.student_id
-        );
-        if(typed!==s.student_id)return message("Delete cancelled.");
-        const last=prompt("Type DELETE to confirm permanent deletion.");
-        if(last!=="DELETE")return message("Delete cancelled.");
-        const {error}=await sb.from("students").delete().eq("id",s.id);
-        if(error)throw error;
-        await loadAll();
-        message("Student deleted. Check your database's foreign-key rules for related records.");
-        break;
-      }
-    }
-  }catch(err){message(err.message||"Action failed.",true);}
-});
+async function toggleBlock(id, blocked) {
+  if (!confirm(blocked ? "Block this student?" : "Unblock this student?"))
+    return;
 
-function renderMeals(){
-  const date=$("mealDate").value,status=$("mealStatus").value;
-  $("mealsRows").innerHTML=meals.filter(m=>
-    (!date||m.meal_date===date)&&(!status||m.status===status)
-  ).map(m=>`<tr><td>${esc(m.meal_date)}</td><td>${esc(m.student_id)}</td><td>${esc(m.meal_type)}</td><td>${esc(m.status)}</td><td>৳${esc(m.amount)}</td></tr>`).join("");
-}
-function renderPayments(){
-  const status=$("paymentStatus").value;
-  $("paymentsRows").innerHTML=payments.filter(p=>
-    !status||p.payment_status===status
-  ).map(p=>`<tr><td>${esc(p.created_at)}</td><td>${esc(p.student_id)}</td><td>৳${esc(p.amount)}</td><td>${esc(p.method)}</td><td>${esc(p.payment_status)}</td><td>${esc(p.transaction_reference)}</td></tr>`).join("");
+  const { error } = await db.from("students")
+    .update({is_blocked: blocked}).eq("id", id);
+
+  if (error) return alert("Update failed: " + error.message);
+  await loadData();
 }
 
-document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{
-  ["students","meals","payments"].forEach(t=>$(t+"Tab").classList.toggle("hidden",t!==b.dataset.tab));
-}));
-$("studentSearch").addEventListener("input",renderStudents);
-$("mealDate").addEventListener("change",renderMeals);
-$("mealStatus").addEventListener("change",renderMeals);
-$("paymentStatus").addEventListener("change",renderPayments);
-$("refresh").addEventListener("click",loadAll);
-$("logout").addEventListener("click",async()=>{
-  await sb.auth.signOut();
-  showLogin();
+async function setRFID(id) {
+  const uid = prompt("Enter the student's RFID UID:");
+  if (uid === null) return;
+
+  const { error } = await db.from("students").update({
+    rfid_uid: uid.trim(),
+    card_status: uid.trim() ? "registered" : "pending"
+  }).eq("id", id);
+
+  if (error) return alert("RFID update failed: " + error.message);
+  await loadData();
+}
+
+$("loginForm").addEventListener("submit", login);
+$("refreshBtn").addEventListener("click", loadData);
+$("studentSearch").addEventListener("input", renderStudents);
+
+$("logoutBtn").addEventListener("click", async () => {
+  await db.auth.signOut();
+  $("dashboard").classList.add("hidden");
+  $("loginCard").classList.remove("hidden");
+  $("password").value = "";
   message("Logged out.");
 });
 
-(async()=>{
-  if(SUPABASE_PUBLISHABLE_KEY==="sb_publishable_O5qjhiHkBqTPCRZjW9VMnQ_f7liBq9j"){
-    message("Setup required: replace the placeholder with your sb_publishable_ key.",true);
-    return;
-  }
-  const {data:{session}}=await sb.auth.getSession();
-  if(session){
-    try{
-      const user=await verifyAdmin();
-      showApp(user);
-      await loadAll();
-    }catch(e){
-      await sb.auth.signOut();
-      showLogin();
+document.querySelectorAll("[data-tab]").forEach(button => {
+  button.addEventListener("click", () => {
+    ["students", "meals", "payments"].forEach(tab => {
+      $(tab + "Tab").classList.toggle("hidden", tab !== button.dataset.tab);
+    });
+  });
+});
+
+// Restore the dashboard only if an existing session belongs to an admin.
+(async () => {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) return;
+
+  try {
+    if (await verifyAdmin()) {
+      $("loginCard").classList.add("hidden");
+      $("dashboard").classList.remove("hidden");
+      await loadData();
     }
+  } catch (error) {
+    console.error(error);
   }
 })();
 </script>
