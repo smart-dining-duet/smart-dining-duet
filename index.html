@@ -199,7 +199,7 @@ function renderCalendar(y,m,map){
       const label=document.createElement('span');label.textContent=MEAL_LABELS[type]+' '+money(MEAL_PRICES[type]);
       const btn=document.createElement('button');btn.className=statusClass(status);btn.textContent=statusLabel(status);
       const isPastMonth=selectedMonth < new Date(new Date().getFullYear(),new Date().getMonth(),1);
-      const canEdit=canEditDate(key)&&!isPastMonth&&status!=='paid'&&status!=='on';
+      const canEdit=canEditDate(key)&&!isPastMonth;
       btn.disabled=!canEdit;
       btn.title=canEdit?(status==='off'?'Select meal':'Turn meal off'):'View only / deadline passed / not approved';
       btn.addEventListener('click',()=>toggleMeal(key,type,status==='off'));
