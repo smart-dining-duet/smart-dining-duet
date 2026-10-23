@@ -205,23 +205,7 @@ function renderCalendar(y,m,map){
       btn.addEventListener('click',()=>toggleMeal(key,type,status==='off'));
       line.append(label,btn);
 
-if (status === 'pending' &&
-    Number(profile?.credit_balance || 0) >= Number(row?.amount || MEAL_PRICES[type])) {
-
-  const creditBtn = document.createElement('button');
-  creditBtn.textContent = 'Use Credit';
-  creditBtn.style.background = '#d9f7e5';
-  creditBtn.style.color = '#116536';
-  creditBtn.style.marginLeft = '4px';
-
-  creditBtn.addEventListener('click', async () => {
-    creditBtn.disabled = true;
-
-    try {
-      const { error } = await supabase.rpc('use_my_credit', {
-        p_meal_date: key,
-        p_meal_type: type
-      });
+line.append(label,btn);box.appendChild(line);
 
       if (error) throw error;
 
@@ -273,6 +257,8 @@ function openVerification(paymentId,amount,method){
   pendingPaymentId=paymentId;$('verifyDescription').textContent=`${method.toUpperCase()} Demo · Amount ${money(amount)}`;
   $('demoOtp').value='';$('demoPin').value='';hideMessage('verifyMsg');$('verifyBackdrop').classList.remove('hidden');
 }
+
+  
 function closeVerification(){$('verifyBackdrop').classList.add('hidden');pendingPaymentId=null}
 async function signOut(){await supabase.auth.signOut();currentUser=null;profile=null;showAuth();showMessage('You have logged out.','success')}
 $('showRegister').addEventListener('click',()=>{hideMessage();showAuth('register')});
@@ -335,6 +321,32 @@ $('verifyForm').addEventListener('submit',async e=>{
     await loadDashboard();
   }catch(err){showMessage('Verification failed: '+(err.message||err),'error','verifyMsg')}finally{btn.disabled=false}
 });
+
+  const creditBtn = document.createElement('button');
+creditBtn.textContent = 'Use Credit';
+
+creditBtn.addEventListener('click', async () => {
+  creditBtn.disabled = true;
+
+  try {
+    const { error } = await supabase.rpc('use_my_credit', {
+      p_meal_date: selectedMealDate,
+      p_meal_type: selectedMealType
+    });
+
+    if (error) throw error;
+
+    showMessage('Credit used successfully!', 'success');
+    await loadDashboard();
+
+  } catch (e) {
+    showMessage('Credit payment failed: ' + e.message, 'error');
+  } finally {
+    creditBtn.disabled = false;
+  }
+});
+
+paymentContainer.appendChild(creditBtn);
 supabase.auth.onAuthStateChange((event,session)=>{
   if(event==='PASSWORD_RECOVERY'){showAuth('reset')}
   if(session?.user){currentUser=session.user;if(event==='SIGNED_IN'||event==='INITIAL_SESSION')setTimeout(()=>loadDashboard(),0)}
