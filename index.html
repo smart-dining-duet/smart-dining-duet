@@ -203,7 +203,47 @@ function renderCalendar(y,m,map){
       btn.disabled=!canEdit;
       btn.title=canEdit?(status==='off'?'Select meal':'Turn meal off'):'View only / deadline passed / not approved';
       btn.addEventListener('click',()=>toggleMeal(key,type,status==='off'));
-      line.append(label,btn);box.appendChild(line);
+      line.append(label,btn);
+
+if (status === 'pending' &&
+    Number(profile?.credit_balance || 0) >= Number(row?.amount || MEAL_PRICES[type])) {
+
+  const creditBtn = document.createElement('button');
+  creditBtn.textContent = 'Use Credit';
+  creditBtn.style.background = '#d9f7e5';
+  creditBtn.style.color = '#116536';
+  creditBtn.style.marginLeft = '4px';
+
+  creditBtn.addEventListener('click', async () => {
+    creditBtn.disabled = true;
+
+    try {
+      const { error } = await supabase.rpc('use_my_credit', {
+        p_meal_date: key,
+        p_meal_type: type
+      });
+
+      if (error) throw error;
+
+      showMessage(
+        MEAL_LABELS[type] + ' paid using credit successfully.',
+        'success'
+      );
+
+      await loadDashboard();
+    } catch (e) {
+      showMessage(
+        'Credit payment failed: ' + (e.message || e),
+        'error'
+      );
+      creditBtn.disabled = false;
+    }
+  });
+
+  line.appendChild(creditBtn);
+}
+
+box.appendChild(line);
     }
     cal.appendChild(box);
   }
