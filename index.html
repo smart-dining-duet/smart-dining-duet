@@ -216,8 +216,21 @@ function renderCalendar(y,m,map){
 }
 async function toggleMeal(date,type,enabled){
   try{
-    const {data,error}=await supabase.rpc('set_my_meal',{p_meal_date:date,p_meal_type:type,p_enabled:enabled});
+    // Keep the existing deadline rules. The database RPC must atomically refund
+    // the meal amount to credit_balance when an already-paid meal is turned OFF.
+    const {data,error}=await supabase.rpc('set_my_meal',{
+      p_meal_date:date,
+      p_meal_type:type,
+      p_enabled:enabled
+    });
     if(error)throw error;
+
+    // Refresh the student row so a credit refund made by the RPC appears immediately.
+    const {data:freshProfile,error:profileError}=await supabase
+      .from('students').select('*').eq('user_id',currentUser.id).maybeSingle();
+    if(profileError)throw profileError;
+    if(freshProfile)profile=freshProfile;
+
     showMessage('Meal updated: '+(enabled?'Pending':'OFF'),'success');
     await loadMonth();
   }catch(e){showMessage('Meal was not changed: '+(e.message||e),'error')}
@@ -287,20 +300,45 @@ $('cancelVerify').addEventListener('click',closeVerification);
 $('useCreditBtn').addEventListener('click',async()=>{
   hideMessage('paymentMsg');
   if(!profile||profile.approval_status!=='approved'||!profile.is_approved||profile.is_blocked){showMessage('Only approved students can use credit.','error','paymentMsg');return}
-  const credit=Number(profile.credit_balance||0);
-  if(credit<=0){showMessage('You do not have available credit.','error','paymentMsg');return}
-  const todayKey=dateKey(new Date());
-  const candidates=monthMeals.filter(r=>r.status==='pending'&&r.meal_date>=todayKey&&Number(r.amount||MEAL_PRICES[r.meal_type])<=credit).sort((a,b)=>a.meal_date.localeCompare(b.meal_date)||MEAL_TYPES.indexOf(a.meal_type)-MEAL_TYPES.indexOf(b.meal_type));
-  if(!candidates.length){showMessage('No eligible pending meal found in the selected month for your available credit.','error','paymentMsg');return}
-  const meal=candidates[0],btn=$('useCreditBtn');btn.disabled=true;
+  if(Number(profile.credit_balance||0)<=0){showMessage('You do not have available credit.','error','paymentMsg');return}
+
+  // Process every eligible Pending meal in date/type order with one button click.
+  // The database RPC checks the real remaining credit and deadline on every meal.
+  const candidates=monthMeals
+    .filter(r=>r.status==='pending' && canEditDate(r.meal_date))
+    .sort((a,b)=>a.meal_date.localeCompare(b.meal_date)||MEAL_TYPES.indexOf(a.meal_type)-MEAL_TYPES.indexOf(b.meal_type));
+  if(!candidates.length){showMessage('No eligible Pending meals in the selected month.','error','paymentMsg');return}
+
+  const btn=$('useCreditBtn');btn.disabled=true;
+  let paidCount=0,paidAmount=0,stopReason='';
   try{
-    const {data,error}=await supabase.rpc('use_my_credit',{p_meal_date:meal.meal_date,p_meal_type:meal.meal_type});
-    if(error)throw error;
+    for(const meal of candidates){
+      const {data,error}=await supabase.rpc('use_my_credit',{
+        p_meal_date:meal.meal_date,
+        p_meal_type:meal.meal_type
+      });
+      if(error){
+        const msg=error.message||String(error);
+        if(/insufficient|not enough|credit/i.test(msg)){stopReason='Available credit is not enough for the remaining meals.';break;}
+        throw error;
+      }
+      paidCount++;
+      paidAmount+=Number(meal.amount||MEAL_PRICES[meal.meal_type]||0);
+    }
     const {data:userData}=await supabase.auth.getUser();currentUser=userData.user;
     await loadDashboard();
-    showMessage('Credit used successfully for '+meal.meal_date+' ('+(MEAL_LABELS[meal.meal_type]||meal.meal_type)+').','success','paymentMsg');
-  }catch(err){showMessage('Could not use credit: '+(err.message||err),'error','paymentMsg')}
-  finally{btn.disabled=!(profile&&profile.approval_status==='approved'&&profile.is_approved&&!profile.is_blocked)}
+    if(paidCount>0){
+      showMessage(`${paidCount} Pending meal(s) paid using ${money(paidAmount)} credit.${stopReason?' '+stopReason:''}`,'success','paymentMsg');
+    }else{
+      showMessage(stopReason||'No meals were paid using credit. Check meal deadline and available balance.','error','paymentMsg');
+    }
+  }catch(err){
+    const {data:userData}=await supabase.auth.getUser();currentUser=userData.user;
+    await loadDashboard();
+    showMessage((paidCount?`${paidCount} meal(s) paid before an error. `:'')+'Could not process remaining meals: '+(err.message||err),'error','paymentMsg');
+  }finally{
+    btn.disabled=!(profile&&profile.approval_status==='approved'&&profile.is_approved&&!profile.is_blocked);
+  }
 });
 $('verifyForm').addEventListener('submit',async e=>{
   e.preventDefault();if(!pendingPaymentId)return;
