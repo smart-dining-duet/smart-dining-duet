@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Smart Dining | DUET</title>
+<style>
+:root{--blue:#0b5ed7;--navy:#103766;--bg:#f3f6fb;--ink:#1d2939;--muted:#66758a;--line:#dce4ef;--green:#137547;--red:#b42318;--amber:#8a6100}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Arial,Helvetica,sans-serif}
+header{background:linear-gradient(120deg,#083d91,#0b5ed7);color:#fff;padding:20px max(16px,calc((100% - 1080px)/2))}
+header h1{margin:0;font-size:24px}header p{margin:5px 0 0;opacity:.9}
+main{max-width:1080px;margin:22px auto;padding:0 14px 40px}.panel{background:#fff;border:1px solid var(--line);border-radius:15px;padding:20px;margin-bottom:16px;box-shadow:0 5px 20px #183b6510}
+h2{font-size:20px;margin:0 0 12px}h3{font-size:16px;margin:0 0 8px}.muted{color:var(--muted)}.small{font-size:12px}.hidden{display:none!important}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.stat{background:#f7faff;border:1px solid var(--line);border-radius:12px;padding:13px}.stat span{display:block;color:var(--muted);font-size:12px}.stat strong{display:block;font-size:21px;margin-top:4px;overflow-wrap:anywhere}
+label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}input,select{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;background:white;color:var(--ink)}input:focus,select:focus{outline:2px solid #b8d4ff;border-color:var(--blue)}.field{margin-bottom:12px}
+.btn{border:0;border-radius:9px;background:var(--blue);color:#fff;padding:11px 15px;font:inherit;font-weight:700;cursor:pointer}.btn:disabled{opacity:.5;cursor:not-allowed}.btn.secondary{background:#e8effa;color:#17457f}.btn.danger{background:#a72c2c}.link{border:0;background:none;color:var(--blue);font:inherit;cursor:pointer;padding:4px 0;text-decoration:underline}.actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.notice{padding:11px 13px;border-radius:10px;background:#fff8df;color:#765100;border:1px solid #f2df9b;margin:10px 0}.message{padding:11px 13px;border-radius:9px;margin:12px 0;background:#eef4ff;color:#194b8c}.message.error{background:#fff0ee;color:#9c2e22}.message.success{background:#eaf8ef;color:#12663b}
+.toprow{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.profile{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.profile div{background:#f8faff;border:1px solid var(--line);border-radius:10px;padding:10px}.profile span{display:block;color:var(--muted);font-size:12px}.profile strong{overflow-wrap:anywhere}.pill{display:inline-block;border-radius:99px;padding:4px 9px;font-size:12px;font-weight:700;background:#edf1f7}.pill.approved{background:#ddf7e7;color:#116536}.pill.pending{background:#fff0c2;color:#805800}.pill.blocked{background:#ffe1df;color:#9c2e22}
+.calendar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}.weekday{text-align:center;color:var(--muted);font-size:12px;padding:4px}.day{border:1px solid var(--line);border-radius:9px;min-height:128px;padding:7px;background:#fff;min-width:0}.day.empty{background:#f7f9fc;min-height:30px}.daynum{font-weight:700;margin-bottom:5px}.meal{display:flex;justify-content:space-between;align-items:center;gap:3px;font-size:11px;padding:4px 0;border-top:1px solid #edf0f5}.meal button{font-size:10px;padding:3px 5px;border-radius:5px;border:0;cursor:pointer;background:#e8edf5;color:#334}.meal button.pending{background:#fff0c2;color:#805800}.meal button.paid{background:#dbeafe;color:#154a9a}.meal button.off{background:#edf1f7;color:#334}.meal button:disabled{opacity:.65;cursor:not-allowed}
+.tablewrap{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;border-bottom:1px solid var(--line);padding:9px 6px;font-size:13px}th{color:var(--muted)}
+.modal-backdrop{position:fixed;inset:0;background:#101828a8;display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}.modal{background:white;border-radius:16px;padding:22px;width:min(440px,100%);box-shadow:0 20px 60px #0003}.modal h2{margin-bottom:6px}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.profile{grid-template-columns:repeat(2,minmax(0,1fr))}.day{padding:4px;min-height:104px}.meal{display:block}.meal button{width:100%;margin-top:2px}.calendar{gap:3px}.weekday{font-size:10px}.daynum{font-size:12px}.grid{grid-template-columns:1fr}.calendar-head h2{font-size:16px}}
+</style>
+</head>
+<body>
+<header><h1>Smart Dining | DUET</h1><p>Shahid Tajuddin Ahmed Hall · Meal Management System</p></header>
+<main>
+<div id="globalMsg" class="message hidden" role="status"></div>
+
+<section id="authView">
+  <div class="panel">
+    <h2>Student Login</h2>
+    <p class="muted">Sign in using your university email address.</p>
+    <form id="loginForm">
+      <div class="field"><label for="loginEmail">University Microsoft Account / Email</label><input id="loginEmail" type="email" autocomplete="username" required></div>
+      <div class="field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+      <div class="actions"><button class="btn" type="submit">Login</button><button class="link" type="button" id="showRegister">Create student account</button><button class="link" type="button" id="showForgot">Forgot password?</button></div>
+    </form>
+  </div>
+  <div id="registerPanel" class="panel hidden">
+    <h2>Student Registration</h2><p class="muted">Your account stays pending until the hall administrator approves it.</p>
+    <form id="registerForm">
+      <div class="grid">
+        <div class="field"><label for="regStudentId">Student ID</label><input id="regStudentId" required maxlength="40"></div>
+        <div class="field"><label for="regName">Full Name</label><input id="regName" required maxlength="120"></div>
+        <div class="field"><label for="regEmail">University Microsoft Account / Email</label><input id="regEmail" type="email" required autocomplete="email"></div>
+        <div class="field"><label for="regPhone">Phone Number</label><input id="regPhone" type="tel" required maxlength="25"></div>
+        <div class="field"><label for="regRoom">Room Number</label><input id="regRoom" required maxlength="30"></div>
+        <div class="field"><label for="regHall">Hall Name</label><input id="regHall" value="Shahid Tajuddin Ahmed Hall" required></div>
+        <div class="field"><label for="regPassword">Password (minimum 8 characters)</label><input id="regPassword" type="password" minlength="8" required autocomplete="new-password"></div>
+        <div class="field"><label for="regConfirm">Confirm Password</label><input id="regConfirm" type="password" minlength="8" required autocomplete="new-password"></div>
+      </div>
+      <div class="actions"><button class="btn" type="submit">Register</button><button class="btn secondary" type="button" id="backLogin1">Back to login</button></div>
+    </form>
+  </div>
+  <div id="forgotPanel" class="panel hidden">
+    <h2>Reset Password</h2><p class="muted">A password-reset link will be sent to your email. Phone number alone is not used to reset passwords.</p>
+    <form id="forgotForm"><div class="field"><label for="forgotEmail">University Email</label><input id="forgotEmail" type="email" required></div><div class="actions"><button class="btn" type="submit">Send reset link</button><button class="btn secondary" type="button" id="backLogin2">Back to login</button></div></form>
+  </div>
+  <div id="resetPanel" class="panel hidden">
+    <h2>Choose a new password</h2>
+    <form id="resetForm"><div class="field"><label for="newPassword">New password</label><input id="newPassword" type="password" minlength="8" required></div><div class="field"><label for="newPassword2">Confirm new password</label><input id="newPassword2" type="password" minlength="8" required></div><button class="btn" type="submit">Update password</button></form>
+  </div>
+</section>
+
+<section id="dashboardView" class="hidden">
+  <div class="panel">
+    <div class="toprow"><div><h2 id="welcome">Welcome</h2><p class="muted" id="studentEmail"></p></div><div class="actions"><span id="approvalPill" class="pill pending">Pending</span><button class="btn secondary" id="logoutBtn">Logout</button></div></div>
+    <div id="approvalNotice" class="notice hidden"></div>
+    <div class="profile" style="margin-top:14px">
+      <div><span>Student ID</span><strong id="profileId">—</strong></div><div><span>Full Name</span><strong id="profileName">—</strong></div><div><span>Hall</span><strong id="profileHall">—</strong></div><div><span>Room Number</span><strong id="profileRoom">—</strong></div><div><span>Phone Number</span><strong id="profilePhone">—</strong></div><div><span>RFID Card Status</span><strong id="profileCard">Not registered</strong></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Account Summary</h2><div class="stats">
+      <div class="stat"><span>Total Meal (selected month)</span><strong id="statMeals">0</strong></div><div class="stat"><span>Total Amount</span><strong id="statTotal">৳0</strong></div><div class="stat"><span>Paid</span><strong id="statPaid">৳0</strong></div><div class="stat"><span>Due</span><strong id="statDue">৳0</strong></div><div class="stat"><span>Available Credit</span><strong id="statCredit">৳0</strong></div>
+    </div><p class="muted small">Totals reflect the selected month. Payment and credit totals come from database records.</p>
+  </div>
+  <div class="panel">
+    <div class="calendar-head"><button id="prevMonth" class="btn secondary">← Previous</button><h2 id="monthTitle">Month</h2><button id="nextMonth" class="btn secondary">Next →</button></div>
+    <div class="notice">Meal deadline: 10:00 PM Bangladesh time on the previous day. Past months and past dates are view-only.</div>
+    <div class="calendar" id="calendar"></div><p class="muted small">OFF = not selected · Pending = selected/unpaid · Paid = verified demo payment. A demo payment does not transfer real money.</p>
+  </div>
+  <div class="panel">
+    <h2>Demo Payment Verification</h2>
+    <div class="notice"><strong>DEMO ONLY:</strong> no real money is transferred. Test OTP: <code>1234</code>, test PIN: <code>1234</code>. Never enter a real mobile-wallet PIN or OTP.</div>
+    <form id="paymentForm"><div class="grid">
+      <div class="field"><label for="payAmount">Payment Amount (৳)</label><input id="payAmount" type="number" min="1" max="100000" step="1" required></div>
+      <div class="field"><label for="payMethod">Demo payment method</label><select id="payMethod"><option value="bkash">bKash Demo</option><option value="nagad">Nagad Demo</option><option value="rocket">Rocket Demo</option></select></div>
+    </div><button class="btn" type="submit">Continue to Demo Verification</button></form>
+    <div id="paymentMsg" class="message hidden"></div>
+    <h3 style="margin-top:20px">Payment History</h3><div class="tablewrap"><table><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th><th>Reference</th></tr></thead><tbody id="paymentsBody"><tr><td colspan="5" class="muted">No payment records loaded.</td></tr></tbody></table></div>
+  </div>
+</section>
+<p class="muted small">Prototype: admin approval must be done securely in Supabase. Real payment gateway integration and ESP32/RFID connection are separate later steps. Never place a Supabase secret/service_role key in this file.</p>
+</main>
+
+<div id="verifyBackdrop" class="modal-backdrop hidden">
+  <div class="modal">
+    <h2>Demo Verification</h2><p class="muted" id="verifyDescription">Demo transaction</p>
+    <form id="verifyForm">
+      <div class="field"><label for="demoOtp">Demo OTP</label><input id="demoOtp" inputmode="numeric" maxlength="6" required autocomplete="off" placeholder="Enter 1234"></div>
+      <div class="field"><label for="demoPin">Demo PIN</label><input id="demoPin" type="password" inputmode="numeric" maxlength="6" required autocomplete="off" placeholder="Enter 1234"></div>
+      <div class="actions"><button class="btn" type="submit" id="verifyBtn">Verify Demo Payment</button><button class="btn secondary" type="button" id="cancelVerify">Cancel</button></div>
+    </form><div id="verifyMsg" class="message hidden"></div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+// Supabase Project URL: base URL only (no /rest/v1/).
+const SUPABASE_URL = 'https://wwgzlzrhrcjpxrtyobty.supabase.co';
+// Paste your sb_publishable_... key here. Never use a secret/service_role key in browser code.
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_O5qjhiHkBqTPCRZjW9VMnQ_f7liBq9j';
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+const $ = id => document.getElementById(id);
+let currentUser = null, profile = null, selectedMonth = new Date(), monthMeals = [], pendingPaymentId = null;
+selectedMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+const MEAL_TYPES = ['breakfast','lunch','dinner'];
+const MEAL_LABELS = {breakfast:'Breakfast', lunch:'Lunch', dinner:'Dinner'};
+const MEAL_PRICES = {breakfast:25,lunch:35,dinner:35};
+const money = n => '৳' + Number(n || 0).toLocaleString('en-BD',{maximumFractionDigits:2});
+const dateKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function showMessage(text,type='info',target='globalMsg'){const e=$(target);e.textContent=text;e.className='message'+(type==='error'?' error':type==='success'?' success':'');e.classList.remove('hidden')}
+function hideMessage(target='globalMsg'){$(target).classList.add('hidden')}
+function showAuth(which='login'){ $('authView').classList.remove('hidden');$('dashboardView').classList.add('hidden');$('registerPanel').classList.toggle('hidden',which!=='register');$('forgotPanel').classList.toggle('hidden',which!=='forgot');$('resetPanel').classList.toggle('hidden',which!=='reset');$('loginForm').classList.toggle('hidden',which==='register'||which==='forgot'||which==='reset'); }
+function showDashboard(){ $('authView').classList.add('hidden');$('dashboardView').classList.remove('hidden'); }
+function getLocalBangladeshDateTime(){return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Dhaka'}))}
+function canEditDate(dateString){
+  const now=getLocalBangladeshDateTime();const [y,m,d]=dateString.split('-').map(Number);const date=new Date(y,m-1,d);
+  const deadline=new Date(y,m-1,d-1,22,0,0,0);
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  return date>=today && now<deadline && profile?.approval_status==='approved' && profile?.is_approved===true && !profile?.is_blocked;
+}
+function statusLabel(status){return status==='paid'||status==='on'?'Paid':status==='pending'?'Pending':'OFF'}
+function statusClass(status){return status==='paid'||status==='on'?'paid':status==='pending'?'pending':'off'}
+
+async function ensureProfile(user){
+  const {data:found,error:readError}=await supabase.from('students').select('*').eq('user_id',user.id).maybeSingle();
+  if(readError) throw readError;
+  if(found) return found;
+  const md=user.user_metadata||{};
+  if(!md.student_id||!md.name) return null;
+  const {error:rpcError}=await supabase.rpc('create_my_student_profile',{
+    p_student_id:String(md.student_id),p_name:String(md.name),
+    p_hall:String(md.hall||'Shahid Tajuddin Ahmed Hall'),
+    p_room_no:String(md.room_no||''),p_phone:String(md.phone||'')
+  });
+  if(rpcError) throw rpcError;
+  const {data:created,error}=await supabase.from('students').select('*').eq('user_id',user.id).single();
+  if(error) throw error;return created;
+}
+async function loadDashboard(){
+  if(!currentUser)return;
+  try{
+    profile=await ensureProfile(currentUser);
+    if(!profile){showAuth();showMessage('No student profile found. Please register first or contact the hall administrator.','error');return}
+    showDashboard();
+    $('welcome').textContent='Welcome, '+profile.name;
+    $('studentEmail').textContent=currentUser.email||'';
+    $('profileId').textContent=profile.student_id||'—';$('profileName').textContent=profile.name||'—';$('profileHall').textContent=profile.hall||'—';$('profileRoom').textContent=profile.room_no||'—';$('profilePhone').textContent=profile.phone||'—';$('profileCard').textContent=profile.card_status||'unregistered';
+    const pill=$('approvalPill');pill.textContent=profile.is_blocked?'Blocked':(profile.approval_status||'pending');pill.className='pill '+(profile.is_blocked?'blocked':profile.approval_status==='approved'?'approved':'pending');
+    const blocked=!!profile.is_blocked, approved=profile.approval_status==='approved'&&profile.is_approved&&!blocked;
+    $('approvalNotice').classList.toggle('hidden',approved);
+    if(blocked)$('approvalNotice').textContent='Your account is blocked. Contact the hall administrator.';
+    else if(!approved)$('approvalNotice').textContent='Your registration is pending admin approval. Meal changes and payment are disabled until approved.';
+    $('paymentForm').querySelector('button').disabled=!approved;
+    await loadMonth();await loadPayments();
+  }catch(e){showAuth();showMessage('Could not load profile: '+(e.message||e),'error')}
+}
+async function loadMonth(){
+  if(!profile)return;
+  const y=selectedMonth.getFullYear(),m=selectedMonth.getMonth();
+  $('monthTitle').textContent=selectedMonth.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const first=new Date(y,m,1),last=new Date(y,m+1,0);
+  const {data,error}=await supabase.from('student_meals').select('*').eq('student_id',profile.student_id).gte('meal_date',dateKey(first)).lte('meal_date',dateKey(last)).order('meal_date');
+  if(error){showMessage('Could not load meals: '+error.message,'error');monthMeals=[]}else monthMeals=data||[];
+  const map=new Map(monthMeals.map(r=>[r.meal_date+'_'+r.meal_type,r]));
+  let count=0,total=0,paid=0,due=0;
+  for(const r of monthMeals){if(['pending','paid','on'].includes(r.status)){count++;total+=Number(r.amount||0)}if(['paid','on'].includes(r.status))paid+=Number(r.amount||0);if(r.status==='pending')due+=Number(r.amount||0)}
+  $('statMeals').textContent=String(count);$('statTotal').textContent=money(total);$('statPaid').textContent=money(paid);$('statDue').textContent=money(due);$('statCredit').textContent=money(profile.credit_balance||0);
+  renderCalendar(y,m,map);
+}
+function renderCalendar(y,m,map){
+  const cal=$('calendar');cal.innerHTML='';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d=>{const e=document.createElement('div');e.className='weekday';e.textContent=d;cal.appendChild(e)});
+  const offset=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+  for(let i=0;i<offset;i++){const e=document.createElement('div');e.className='day empty';cal.appendChild(e)}
+  for(let n=1;n<=days;n++){
+    const date=new Date(y,m,n),key=dateKey(date),box=document.createElement('div');box.className='day';
+    const num=document.createElement('div');num.className='daynum';num.textContent=n;box.appendChild(num);
+    for(const type of MEAL_TYPES){
+      const row=map.get(key+'_'+type),status=row?.status||'off';
+      const line=document.createElement('div');line.className='meal';
+      const label=document.createElement('span');label.textContent=MEAL_LABELS[type]+' '+money(MEAL_PRICES[type]);
+      const btn=document.createElement('button');btn.className=statusClass(status);btn.textContent=statusLabel(status);
+      const isPastMonth=selectedMonth < new Date(new Date().getFullYear(),new Date().getMonth(),1);
+      const canEdit=canEditDate(key)&&!isPastMonth&&status!=='paid'&&status!=='on';
+      btn.disabled=!canEdit;
+      btn.title=canEdit?(status==='off'?'Select meal':'Turn meal off'):'View only / deadline passed / not approved';
+      btn.addEventListener('click',()=>toggleMeal(key,type,status==='off'));
+      line.append(label,btn);box.appendChild(line);
+    }
+    cal.appendChild(box);
+  }
+  const totalCells=offset+days;for(let i=totalCells;i%7!==0;i++){const e=document.createElement('div');e.className='day empty';cal.appendChild(e)}
+  $('prevMonth').disabled=selectedMonth.getFullYear()===new Date().getFullYear()&&selectedMonth.getMonth()===new Date().getMonth()-1;
+  // Allow viewing previous months, but don't allow navigating beyond the next month.
+  $('prevMonth').disabled=false;
+  $('nextMonth').disabled=selectedMonth.getFullYear()>new Date().getFullYear()||(selectedMonth.getFullYear()===new Date().getFullYear()&&selectedMonth.getMonth()>=new Date().getMonth()+1);
+}
+async function toggleMeal(date,type,enabled){
+  try{
+    const {data,error}=await supabase.rpc('set_my_meal',{p_meal_date:date,p_meal_type:type,p_enabled:enabled});
+    if(error)throw error;
+    showMessage('Meal updated: '+(enabled?'Pending':'OFF'),'success');
+    await loadMonth();
+  }catch(e){showMessage('Meal was not changed: '+(e.message||e),'error')}
+}
+async function loadPayments(){
+  if(!profile)return;
+  const body=$('paymentsBody');body.innerHTML='<tr><td colspan="5" class="muted">Loading…</td></tr>';
+  const {data,error}=await supabase.from('payments').select('*').eq('student_id',profile.student_id).order('created_at',{ascending:false}).limit(30);
+  if(error){body.innerHTML='<tr><td colspan="5">Could not load payments</td></tr>';return}
+  if(!data?.length){body.innerHTML='<tr><td colspan="5" class="muted">No payment records yet.</td></tr>';return}
+  body.innerHTML=data.map(p=>`<tr><td>${esc(new Date(p.created_at).toLocaleString())}</td><td>${money(p.amount)}</td><td>${esc((p.method||'').toUpperCase())}${String(p.transaction_reference||'').startsWith('DEMO-')?' Demo':''}</td><td>${esc(p.payment_status)}</td><td>${esc(p.transaction_reference||'—')}</td></tr>`).join('');
+}
+function openVerification(paymentId,amount,method){
+  pendingPaymentId=paymentId;$('verifyDescription').textContent=`${method.toUpperCase()} Demo · Amount ${money(amount)}`;
+  $('demoOtp').value='';$('demoPin').value='';hideMessage('verifyMsg');$('verifyBackdrop').classList.remove('hidden');
+}
+function closeVerification(){$('verifyBackdrop').classList.add('hidden');pendingPaymentId=null}
+async function signOut(){await supabase.auth.signOut();currentUser=null;profile=null;showAuth();showMessage('You have logged out.','success')}
+$('showRegister').addEventListener('click',()=>{hideMessage();showAuth('register')});
+$('showForgot').addEventListener('click',()=>{hideMessage();showAuth('forgot')});
+$('backLogin1').addEventListener('click',()=>showAuth());$('backLogin2').addEventListener('click',()=>showAuth());
+$('registerForm').addEventListener('submit',async e=>{
+  e.preventDefault();hideMessage();const password=$('regPassword').value;
+  if(password!==$('regConfirm').value){showMessage('Passwords do not match.','error');return}
+  const email=$('regEmail').value.trim().toLowerCase();
+  const metadata={student_id:$('regStudentId').value.trim(),name:$('regName').value.trim(),hall:$('regHall').value.trim(),room_no:$('regRoom').value.trim(),phone:$('regPhone').value.trim()};
+  const btn=e.submitter;btn.disabled=true;
+  try{
+    const {data,error}=await supabase.auth.signUp({email,password,options:{data:metadata}});
+    if(error)throw error;
+    if(data.session){currentUser=data.user;await loadDashboard();showMessage('Registration submitted. Your profile is pending approval.','success')}
+    else{showAuth();showMessage('Registration created. Check your university email and confirm it, then log in. Your profile will be created after sign-in.','success')}
+  }catch(err){showMessage('Registration failed: '+(err.message||err),'error')}finally{btn.disabled=false}
+});
+$('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();hideMessage();const btn=e.submitter;btn.disabled=true;
+  try{const {data,error}=await supabase.auth.signInWithPassword({email:$('loginEmail').value.trim().toLowerCase(),password:$('loginPassword').value});if(error)throw error;currentUser=data.user;await loadDashboard()}
+  catch(err){showMessage('Login failed: '+(err.message||err),'error')}finally{btn.disabled=false}
+});
+$('forgotForm').addEventListener('submit',async e=>{
+  e.preventDefault();const btn=e.submitter;btn.disabled=true;
+  try{const {error}=await supabase.auth.resetPasswordForEmail($('forgotEmail').value.trim().toLowerCase(),{redirectTo:location.origin+location.pathname});if(error)throw error;showMessage('If this email is registered, a password-reset email will be sent. Check your inbox.','success')}
+  catch(err){showMessage('Could not send reset link: '+(err.message||err),'error')}finally{btn.disabled=false}
+});
+$('resetForm').addEventListener('submit',async e=>{
+  e.preventDefault();if($('newPassword').value!==$('newPassword2').value){showMessage('Passwords do not match.','error');return}
+  try{const {error}=await supabase.auth.updateUser({password:$('newPassword').value});if(error)throw error;showAuth();showMessage('Password updated. Please log in.','success')}
+  catch(err){showMessage('Password update failed: '+(err.message||err),'error')}
+});
+$('logoutBtn').addEventListener('click',signOut);
+$('prevMonth').addEventListener('click',async()=>{selectedMonth=new Date(selectedMonth.getFullYear(),selectedMonth.getMonth()-1,1);await loadMonth()});
+$('nextMonth').addEventListener('click',async()=>{const next=new Date(selectedMonth.getFullYear(),selectedMonth.getMonth()+1,1),now=new Date();if(next>new Date(now.getFullYear(),now.getMonth()+1,1))return;selectedMonth=next;await loadMonth()});
+$('paymentForm').addEventListener('submit',async e=>{
+  e.preventDefault();hideMessage('paymentMsg');
+  if(!profile||profile.approval_status!=='approved'||!profile.is_approved||profile.is_blocked){showMessage('Only approved students can create payment requests.','error','paymentMsg');return}
+  const amount=Number($('payAmount').value),method=$('payMethod').value;
+  if(!Number.isFinite(amount)||amount<=0){showMessage('Enter a valid amount.','error','paymentMsg');return}
+  const btn=e.submitter;btn.disabled=true;
+  try{
+    const {data,error}=await supabase.rpc('create_my_payment',{p_amount:amount,p_method:method,p_reference:'DEMO-REQUEST'});
+    if(error)throw error;
+    openVerification(data,amount,method);
+    showMessage('Payment request created. Complete the demo OTP/PIN check.','info','paymentMsg');
+  }catch(err){showMessage('Could not create payment request: '+(err.message||err),'error','paymentMsg')}finally{btn.disabled=false}
+});
+$('cancelVerify').addEventListener('click',closeVerification);
+$('verifyForm').addEventListener('submit',async e=>{
+  e.preventDefault();if(!pendingPaymentId)return;
+  const btn=$('verifyBtn');btn.disabled=true;hideMessage('verifyMsg');
+  try{
+    const {data,error}=await supabase.rpc('complete_demo_payment',{p_payment_id:pendingPaymentId,p_otp:$('demoOtp').value.trim(),p_pin:$('demoPin').value.trim()});
+    if(error)throw error;
+    showMessage('Demo payment successful. No real money was transferred. Reference: '+data,'success','paymentMsg');
+    closeVerification();
+    const {data:userData}=await supabase.auth.getUser();currentUser=userData.user;
+    await loadDashboard();
+  }catch(err){showMessage('Verification failed: '+(err.message||err),'error','verifyMsg')}finally{btn.disabled=false}
+});
+supabase.auth.onAuthStateChange((event,session)=>{
+  if(event==='PASSWORD_RECOVERY'){showAuth('reset')}
+  if(session?.user){currentUser=session.user;if(event==='SIGNED_IN'||event==='INITIAL_SESSION')setTimeout(()=>loadDashboard(),0)}
+  else if(event==='SIGNED_OUT'){currentUser=null;profile=null;showAuth()}
+});
+const {data:{session}}=await supabase.auth.getSession();
+if(session?.user){currentUser=session.user;await loadDashboard()}else{showAuth()}
+</script>
+</body>
+</html> 
