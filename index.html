@@ -82,19 +82,12 @@ label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}input,selec
     <div class="calendar" id="calendar"></div><p class="muted small">OFF = not selected · Pending = selected/unpaid · Paid = verified demo payment. A demo payment does not transfer real money.</p>
   </div>
   <div class="panel">
-    <h2>Demo Payment Verification</h2>
-    <div class="notice"><strong>DEMO ONLY:</strong> no real money is transferred. Test OTP: <code>1234</code>, test PIN: <code>1234</code>. Never enter a real mobile-wallet PIN or OTP.</div>
+    <h2>Payment</h2>
+    <div class="notice"><strong>Prototype payment:</strong> this is a simulated payment flow; no real money is transferred. Test OTP: <code>1234</code>, test PIN: <code>1234</code>. Never enter a real mobile-wallet PIN or OTP.</div>
     <form id="paymentForm"><div class="grid">
       <div class="field"><label for="payAmount">Payment Amount (৳)</label><input id="payAmount" type="number" min="1" max="100000" step="1" required></div>
-      <div class="field"><label for="payMethod">Demo payment method</label><select id="payMethod"><option value="bkash">bKash Demo</option><option value="nagad">Nagad Demo</option><option value="rocket">Rocket Demo</option></select></div>
-<div class="actions">
-  <button class="btn" type="submit">Payment</button>
-  <button class="btn" type="button" id="useCreditBtn"
-          style="background:#137547">
-    Use Credit
-  </button>
-</div>
-      
+      <div class="field"><label for="payMethod">Payment method</label><select id="payMethod"><option value="bkash">bKash</option><option value="nagad">Nagad</option><option value="rocket">Rocket</option></select></div>
+    </div><div class="actions"><button class="btn" type="submit">Payment</button><button class="btn" type="button" id="useCreditBtn" style="background:#137547">Use Credit</button></div></form>
     <div id="paymentMsg" class="message hidden"></div>
     <h3 style="margin-top:20px">Payment History</h3><div class="tablewrap"><table><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th><th>Reference</th></tr></thead><tbody id="paymentsBody"><tr><td colspan="5" class="muted">No payment records loaded.</td></tr></tbody></table></div>
   </div>
@@ -104,11 +97,11 @@ label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}input,selec
 
 <div id="verifyBackdrop" class="modal-backdrop hidden">
   <div class="modal">
-    <h2>Demo Verification</h2><p class="muted" id="verifyDescription">Demo transaction</p>
+    <h2>Payment Verification</h2><p class="muted" id="verifyDescription">Payment transaction</p>
     <form id="verifyForm">
-      <div class="field"><label for="demoOtp">Demo OTP</label><input id="demoOtp" inputmode="numeric" maxlength="6" required autocomplete="off" placeholder="Enter 1234"></div>
-      <div class="field"><label for="demoPin">Demo PIN</label><input id="demoPin" type="password" inputmode="numeric" maxlength="6" required autocomplete="off" placeholder="Enter 1234"></div>
-      <div class="actions"><button class="btn" type="submit" id="verifyBtn">Verify Demo Payment</button><button class="btn secondary" type="button" id="cancelVerify">Cancel</button></div>
+      <div class="field"><label for="demoOtp">Test OTP</label><input id="demoOtp" inputmode="numeric" maxlength="6" required autocomplete="off" placeholder="Enter 1234"></div>
+      <div class="field"><label for="demoPin">Test PIN</label><input id="demoPin" type="password" inputmode="numeric" maxlength="6" required autocomplete="off" placeholder="Enter 1234"></div>
+      <div class="actions"><button class="btn" type="submit" id="verifyBtn">Verify Payment</button><button class="btn secondary" type="button" id="cancelVerify">Cancel</button></div>
     </form><div id="verifyMsg" class="message hidden"></div>
   </div>
 </div>
@@ -175,7 +168,8 @@ async function loadDashboard(){
     $('approvalNotice').classList.toggle('hidden',approved);
     if(blocked)$('approvalNotice').textContent='Your account is blocked. Contact the hall administrator.';
     else if(!approved)$('approvalNotice').textContent='Your registration is pending admin approval. Meal changes and payment are disabled until approved.';
-    $('paymentForm').querySelector('button').disabled=!approved;
+    $('paymentForm').querySelector('button[type=submit]').disabled=!approved;
+    $('useCreditBtn').disabled=!approved;
     await loadMonth();await loadPayments();
   }catch(e){showAuth();showMessage('Could not load profile: '+(e.message||e),'error')}
 }
@@ -210,31 +204,7 @@ function renderCalendar(y,m,map){
       btn.disabled=!canEdit;
       btn.title=canEdit?(status==='off'?'Select meal':'Turn meal off'):'View only / deadline passed / not approved';
       btn.addEventListener('click',()=>toggleMeal(key,type,status==='off'));
-      line.append(label,btn);
-
-line.append(label,btn);box.appendChild(line);
-
-      if (error) throw error;
-
-      showMessage(
-        MEAL_LABELS[type] + ' paid using credit successfully.',
-        'success'
-      );
-
-      await loadDashboard();
-    } catch (e) {
-      showMessage(
-        'Credit payment failed: ' + (e.message || e),
-        'error'
-      );
-      creditBtn.disabled = false;
-    }
-  });
-
-  line.appendChild(creditBtn);
-}
-
-box.appendChild(line);
+      line.append(label,btn);box.appendChild(line);
     }
     cal.appendChild(box);
   }
@@ -261,11 +231,9 @@ async function loadPayments(){
   body.innerHTML=data.map(p=>`<tr><td>${esc(new Date(p.created_at).toLocaleString())}</td><td>${money(p.amount)}</td><td>${esc((p.method||'').toUpperCase())}${String(p.transaction_reference||'').startsWith('DEMO-')?' Demo':''}</td><td>${esc(p.payment_status)}</td><td>${esc(p.transaction_reference||'—')}</td></tr>`).join('');
 }
 function openVerification(paymentId,amount,method){
-  pendingPaymentId=paymentId;$('verifyDescription').textContent=`${method.toUpperCase()} Demo · Amount ${money(amount)}`;
+  pendingPaymentId=paymentId;$('verifyDescription').textContent=`${method.toUpperCase()} · Amount ${money(amount)}`;
   $('demoOtp').value='';$('demoPin').value='';hideMessage('verifyMsg');$('verifyBackdrop').classList.remove('hidden');
 }
-
-  
 function closeVerification(){$('verifyBackdrop').classList.add('hidden');pendingPaymentId=null}
 async function signOut(){await supabase.auth.signOut();currentUser=null;profile=null;showAuth();showMessage('You have logged out.','success')}
 $('showRegister').addEventListener('click',()=>{hideMessage();showAuth('register')});
@@ -316,104 +284,36 @@ $('paymentForm').addEventListener('submit',async e=>{
   }catch(err){showMessage('Could not create payment request: '+(err.message||err),'error','paymentMsg')}finally{btn.disabled=false}
 });
 $('cancelVerify').addEventListener('click',closeVerification);
-$('useCreditBtn').addEventListener('click', async () => {
-  if (!profile || !currentUser) return;
-
-  const credit = Number(profile.credit_balance || 0);
-
-  const pendingMeals = monthMeals
-    .filter(r => r.status === 'pending')
-    .sort((a, b) =>
-      a.meal_date.localeCompare(b.meal_date) ||
-      MEAL_TYPES.indexOf(a.meal_type) -
-      MEAL_TYPES.indexOf(b.meal_type)
-    );
-
-  const meal = pendingMeals.find(r =>
-    Number(r.amount || MEAL_PRICES[r.meal_type]) <= credit
-  );
-
-  if (!meal) {
-    showMessage(
-      credit <= 0
-        ? 'Your credit balance is zero.'
-        : 'No pending meal can be paid with your current credit.',
-      'error',
-      'paymentMsg'
-    );
-    return;
-  }
-
-  const btn = $('useCreditBtn');
-  btn.disabled = true;
-
-  try {
-    const { error } = await supabase.rpc('use_my_credit', {
-      p_meal_date: meal.meal_date,
-      p_meal_type: meal.meal_type
-    });
-
-    if (error) throw error;
-
-    showMessage(
-      MEAL_LABELS[meal.meal_type] +
-      ' on ' + meal.meal_date +
-      ' paid using credit successfully.',
-      'success',
-      'paymentMsg'
-    );
-
+$('useCreditBtn').addEventListener('click',async()=>{
+  hideMessage('paymentMsg');
+  if(!profile||profile.approval_status!=='approved'||!profile.is_approved||profile.is_blocked){showMessage('Only approved students can use credit.','error','paymentMsg');return}
+  const credit=Number(profile.credit_balance||0);
+  if(credit<=0){showMessage('You do not have available credit.','error','paymentMsg');return}
+  const todayKey=dateKey(new Date());
+  const candidates=monthMeals.filter(r=>r.status==='pending'&&r.meal_date>=todayKey&&Number(r.amount||MEAL_PRICES[r.meal_type])<=credit).sort((a,b)=>a.meal_date.localeCompare(b.meal_date)||MEAL_TYPES.indexOf(a.meal_type)-MEAL_TYPES.indexOf(b.meal_type));
+  if(!candidates.length){showMessage('No eligible pending meal found in the selected month for your available credit.','error','paymentMsg');return}
+  const meal=candidates[0],btn=$('useCreditBtn');btn.disabled=true;
+  try{
+    const {data,error}=await supabase.rpc('use_my_credit',{p_meal_date:meal.meal_date,p_meal_type:meal.meal_type});
+    if(error)throw error;
+    const {data:userData}=await supabase.auth.getUser();currentUser=userData.user;
     await loadDashboard();
-
-  } catch (err) {
-    showMessage(
-      'Credit payment failed: ' + (err.message || err),
-      'error',
-      'paymentMsg'
-    );
-  } finally {
-    btn.disabled = false;
-  }
+    showMessage('Credit used successfully for '+meal.meal_date+' ('+(MEAL_LABELS[meal.meal_type]||meal.meal_type)+').','success','paymentMsg');
+  }catch(err){showMessage('Could not use credit: '+(err.message||err),'error','paymentMsg')}
+  finally{btn.disabled=!(profile&&profile.approval_status==='approved'&&profile.is_approved&&!profile.is_blocked)}
 });
-  
 $('verifyForm').addEventListener('submit',async e=>{
   e.preventDefault();if(!pendingPaymentId)return;
   const btn=$('verifyBtn');btn.disabled=true;hideMessage('verifyMsg');
   try{
     const {data,error}=await supabase.rpc('complete_demo_payment',{p_payment_id:pendingPaymentId,p_otp:$('demoOtp').value.trim(),p_pin:$('demoPin').value.trim()});
     if(error)throw error;
-    showMessage('Demo payment successful. No real money was transferred. Reference: '+data,'success','paymentMsg');
+    showMessage('Payment successful in prototype mode. No real money was transferred. Reference: '+data,'success','paymentMsg');
     closeVerification();
     const {data:userData}=await supabase.auth.getUser();currentUser=userData.user;
     await loadDashboard();
   }catch(err){showMessage('Verification failed: '+(err.message||err),'error','verifyMsg')}finally{btn.disabled=false}
 });
-
-  const creditBtn = document.createElement('button');
-creditBtn.textContent = 'Use Credit';
-
-creditBtn.addEventListener('click', async () => {
-  creditBtn.disabled = true;
-
-  try {
-    const { error } = await supabase.rpc('use_my_credit', {
-      p_meal_date: selectedMealDate,
-      p_meal_type: selectedMealType
-    });
-
-    if (error) throw error;
-
-    showMessage('Credit used successfully!', 'success');
-    await loadDashboard();
-
-  } catch (e) {
-    showMessage('Credit payment failed: ' + e.message, 'error');
-  } finally {
-    creditBtn.disabled = false;
-  }
-});
-
-paymentContainer.appendChild(creditBtn);
 supabase.auth.onAuthStateChange((event,session)=>{
   if(event==='PASSWORD_RECOVERY'){showAuth('reset')}
   if(session?.user){currentUser=session.user;if(event==='SIGNED_IN'||event==='INITIAL_SESSION')setTimeout(()=>loadDashboard(),0)}
@@ -423,4 +323,4 @@ const {data:{session}}=await supabase.auth.getSession();
 if(session?.user){currentUser=session.user;await loadDashboard()}else{showAuth()}
 </script>
 </body>
-</html> 
+</html>
